@@ -23,6 +23,7 @@ import { useDemo } from '../contexts/DemoContext';
 import { supabase } from '../lib/supabase';
 import MonthSwitcher from './MonthSwitcher';
 import TransactionForm from './TransactionForm';
+import QuickTransactionForm from './QuickTransactionForm';
 import SpendingPace from './SpendingPace';
 import type { Transaction, Budget } from '../types/finance';
 import { Link } from 'react-router-dom';
@@ -720,12 +721,7 @@ function ImprovedDashboard() {
 
           {showQuickAdd && !isDemoMode && (
             <div className="p-4 border-t border-dark-700">
-              <button
-                onClick={() => setIsModalOpen(true)}
-                className="w-full bg-gradient-to-r from-indigo-500 to-purple-500 text-white px-4 py-3 rounded-lg hover:from-indigo-600 hover:to-purple-600 transition-all font-medium"
-              >
-                Open Transaction Form
-              </button>
+              <QuickTransactionForm onSuccess={fetchData} />
             </div>
           )}
         </div>
