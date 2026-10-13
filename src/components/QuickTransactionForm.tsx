@@ -15,9 +15,16 @@ type QuickTransactionFormProps = {
   onSuccess?: () => void;
 };
 
+type TopCategory = {
+  id: string;
+  name: string;
+  count: number;
+};
+
 export default function QuickTransactionForm({ onSuccess }: QuickTransactionFormProps) {
   const { user } = useAuth();
   const [categories, setCategories] = useState<Category[]>([]);
+  const [topCategories, setTopCategories] = useState<TopCategory[]>([]);
   const [formData, setFormData] = useState({
     type: 'expense' as const,
     category_id: '',
@@ -47,6 +54,57 @@ export default function QuickTransactionForm({ onSuccess }: QuickTransactionForm
     };
 
     fetchCategories();
+  }, [user]);
+
+  useEffect(() => {
+    const fetchTopCategories = async () => {
+      if (!user) return;
+
+      try {
+        // Fetch all transactions and count by category
+        const { data: transactions, error } = await supabase
+          .from('transactions')
+          .select('category_id, categories(name)')
+          .eq('user_id', user.id)
+          .eq('type', 'expense')
+          .not('category_id', 'is', null);
+
+        if (error) throw error;
+
+        // Count category usage
+        const categoryCount = new Map<string, { name: string; count: number }>();
+
+        transactions?.forEach(tx => {
+          if (tx.category_id && tx.categories) {
+            const existing = categoryCount.get(tx.category_id);
+            if (existing) {
+              existing.count++;
+            } else {
+              categoryCount.set(tx.category_id, {
+                name: (tx.categories as any).name,
+                count: 1
+              });
+            }
+          }
+        });
+
+        // Convert to array and sort by count
+        const topCats = Array.from(categoryCount.entries())
+          .map(([id, data]) => ({
+            id,
+            name: data.name,
+            count: data.count
+          }))
+          .sort((a, b) => b.count - a.count)
+          .slice(0, 4);
+
+        setTopCategories(topCats);
+      } catch (error) {
+        console.error('Error fetching top categories:', error);
+      }
+    };
+
+    fetchTopCategories();
   }, [user]);
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -146,6 +204,31 @@ export default function QuickTransactionForm({ onSuccess }: QuickTransactionForm
             <span className="text-dark-100">Income</span>
           </label>
         </div>
+
+        {/* Quick Select Pills - Most Used Categories */}
+        {formData.type === 'expense' && topCategories.length > 0 && (
+          <div>
+            <label className="block text-sm font-medium text-dark-400 mb-2">
+              Quick Select
+            </label>
+            <div className="flex flex-wrap gap-2">
+              {topCategories.map(cat => (
+                <button
+                  key={cat.id}
+                  type="button"
+                  onClick={() => setFormData({ ...formData, category_id: cat.id })}
+                  className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-all ${
+                    formData.category_id === cat.id
+                      ? 'bg-indigo-500 text-white ring-2 ring-indigo-400'
+                      : 'bg-dark-700 text-dark-200 hover:bg-dark-600 hover:text-dark-100'
+                  }`}
+                >
+                  {cat.name}
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
