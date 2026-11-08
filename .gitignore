@@ -30,3 +30,4 @@ dist-ssr
 *.sw?
 REVISAR_categorias.xlsx
 *.b64
+*.csv
