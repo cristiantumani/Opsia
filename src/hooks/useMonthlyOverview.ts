@@ -36,29 +36,44 @@ export function useMonthlyOverview(year: number) {
           return `${year}-${month}`;
         });
 
-        // Fetch all transactions for the year in ONE query
+        // Fetch all transactions for the year using pagination to bypass Supabase's 1000 row limit
         const startDate = `${year}-01-01`;
         const endDate = `${year}-12-31`;
 
-        const { data: transactions, error: txError } = await supabase
-          .from('transactions')
-          .select('date, type, amount')
-          .eq('user_id', effectiveUserId)
-          .gte('date', startDate)
-          .lte('date', endDate)
-          .limit(50000); // High limit to handle years of transaction data
+        let allTransactions: any[] = [];
+        let page = 0;
+        const pageSize = 1000; // Supabase's max per request
+        let hasMore = true;
 
-        if (txError) throw txError;
+        // Fetch in batches until we get all transactions
+        while (hasMore) {
+          const { data: batch, error: txError } = await supabase
+            .from('transactions')
+            .select('date, type, amount')
+            .eq('user_id', effectiveUserId)
+            .gte('date', startDate)
+            .lte('date', endDate)
+            .order('date', { ascending: true })
+            .range(page * pageSize, (page + 1) * pageSize - 1);
+
+          if (txError) throw txError;
+
+          if (batch && batch.length > 0) {
+            allTransactions = [...allTransactions, ...batch];
+            hasMore = batch.length === pageSize; // Continue if we got a full page
+            page++;
+          } else {
+            hasMore = false;
+          }
+        }
 
         console.log('=== Monthly Overview Debug ===');
         console.log('Year:', year);
-        console.log('Total transactions fetched:', transactions?.length || 0);
-        console.log('Sample transactions:', transactions?.slice(0, 5));
+        console.log('Total transactions fetched:', allTransactions.length);
+        console.log('Pages fetched:', page);
+        console.log('Sample transactions:', allTransactions.slice(0, 5));
 
-        // Warning if hitting the limit
-        if (transactions && transactions.length >= 50000) {
-          console.warn('⚠️ Transaction limit reached! Some data may be missing. Consider pagination.');
-        }
+        const transactions = allTransactions;
 
         // Fetch all budgets for the user (including month-specific budgets)
         const { data: budgets, error: budgetError } = await supabase
