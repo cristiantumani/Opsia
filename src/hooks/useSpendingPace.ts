@@ -28,9 +28,14 @@ export function useSpendingPace(year: number, month: number, monthsToCompare: nu
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<ReportError | null>(null);
   const [currentDayOfMonth, setCurrentDayOfMonth] = useState(new Date().getDate());
+  const [refreshTrigger, setRefreshTrigger] = useState(0);
 
   // Use demo user ID when in demo mode, otherwise use authenticated user
   const effectiveUserId = isDemoMode ? DEMO_USER_ID : user?.id;
+
+  const refetch = () => {
+    setRefreshTrigger(prev => prev + 1);
+  };
 
   useEffect(() => {
     if (!effectiveUserId) return;
@@ -139,7 +144,7 @@ export function useSpendingPace(year: number, month: number, monthsToCompare: nu
     };
 
     fetchSpendingPace();
-  }, [effectiveUserId, year, month, monthsToCompare]);
+  }, [effectiveUserId, year, month, monthsToCompare, refreshTrigger]);
 
-  return { data, currentDayOfMonth, loading, error };
+  return { data, currentDayOfMonth, loading, error, refetch };
 }

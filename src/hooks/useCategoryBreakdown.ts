@@ -30,9 +30,14 @@ export function useCategoryBreakdown(year: number, month: number, filters: Filte
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<ReportError | null>(null);
   const [totalExpenses, setTotalExpenses] = useState(0);
+  const [refreshTrigger, setRefreshTrigger] = useState(0);
 
   // Use demo user ID when in demo mode, otherwise use authenticated user
   const effectiveUserId = isDemoMode ? DEMO_USER_ID : user?.id;
+
+  const refetch = () => {
+    setRefreshTrigger(prev => prev + 1);
+  };
 
   useEffect(() => {
     if (!effectiveUserId) return;
@@ -117,7 +122,7 @@ export function useCategoryBreakdown(year: number, month: number, filters: Filte
     };
 
     fetchCategoryBreakdown();
-  }, [effectiveUserId, year, month, filters.includeFixed, filters.includeVariable, filters.includeControllableFixed]);
+  }, [effectiveUserId, year, month, filters.includeFixed, filters.includeVariable, filters.includeControllableFixed, refreshTrigger]);
 
-  return { data, totalExpenses, loading, error };
+  return { data, totalExpenses, loading, error, refetch };
 }
