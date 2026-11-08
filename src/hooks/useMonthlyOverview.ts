@@ -46,7 +46,7 @@ export function useMonthlyOverview(year: number) {
           .eq('user_id', effectiveUserId)
           .gte('date', startDate)
           .lte('date', endDate)
-          .limit(10000); // Increase limit to handle large datasets
+          .limit(50000); // High limit to handle years of transaction data
 
         if (txError) throw txError;
 
@@ -54,6 +54,11 @@ export function useMonthlyOverview(year: number) {
         console.log('Year:', year);
         console.log('Total transactions fetched:', transactions?.length || 0);
         console.log('Sample transactions:', transactions?.slice(0, 5));
+
+        // Warning if hitting the limit
+        if (transactions && transactions.length >= 50000) {
+          console.warn('⚠️ Transaction limit reached! Some data may be missing. Consider pagination.');
+        }
 
         // Fetch all budgets for the user (including month-specific budgets)
         const { data: budgets, error: budgetError } = await supabase
