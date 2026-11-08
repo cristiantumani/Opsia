@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { Calendar } from 'lucide-react';
+import React, { useState, useEffect, useRef } from 'react';
+import { Calendar, RefreshCw } from 'lucide-react';
 import { useDemo } from '../contexts/DemoContext';
 import MonthlyOverview from '../components/MonthlyOverview';
 import CategoryBreakdown from '../components/CategoryBreakdown';
@@ -18,9 +18,34 @@ export default function Reports() {
 
   const [selectedYear, setSelectedYear] = useState(defaultYear);
   const [selectedMonth, setSelectedMonth] = useState(defaultMonth);
+  const [refreshKey, setRefreshKey] = useState(0);
+  const [isRefreshing, setIsRefreshing] = useState(false);
 
   // Generate year options (current year and 5 years back)
   const yearOptions = Array.from({ length: 6 }, (_, i) => currentYear - i);
+
+  // Manual refresh function
+  const handleRefresh = () => {
+    setIsRefreshing(true);
+    setRefreshKey(prev => prev + 1);
+    setTimeout(() => setIsRefreshing(false), 1000);
+  };
+
+  // Auto-refresh when page becomes visible
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible') {
+        // Refresh data when user returns to the page
+        setRefreshKey(prev => prev + 1);
+      }
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+    };
+  }, []);
 
   // Generate month options
   const monthOptions = [
@@ -53,8 +78,17 @@ export default function Reports() {
               </p>
             </div>
 
-            {/* Year Selector */}
-            <div className="flex items-center gap-2">
+            {/* Year Selector & Refresh Button */}
+            <div className="flex items-center gap-3">
+              <button
+                onClick={handleRefresh}
+                disabled={isRefreshing}
+                className="flex items-center gap-2 px-4 py-2 bg-indigo-500 text-white rounded-lg hover:bg-indigo-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                title="Refresh all reports"
+              >
+                <RefreshCw size={16} className={isRefreshing ? 'animate-spin' : ''} />
+                <span className="hidden sm:inline">Refresh</span>
+              </button>
               <Calendar className="text-dark-400" size={20} />
               <select
                 value={selectedYear}
@@ -76,7 +110,7 @@ export default function Reports() {
           {/* Annual Overview */}
           <section>
             <h2 className="text-xl font-semibold text-dark-50 mb-4">Annual Overview</h2>
-            <MonthlyOverview year={selectedYear} />
+            <MonthlyOverview key={`monthly-${refreshKey}`} year={selectedYear} />
           </section>
 
           {/* Category Breakdown */}
@@ -98,17 +132,17 @@ export default function Reports() {
                 </select>
               </div>
             </div>
-            <CategoryBreakdown year={selectedYear} month={selectedMonth} />
+            <CategoryBreakdown key={`category-${refreshKey}`} year={selectedYear} month={selectedMonth} />
           </section>
 
           {/* Spending Pace */}
           <section>
-            <SpendingPace year={selectedYear} month={selectedMonth} />
+            <SpendingPace key={`pace-${refreshKey}`} year={selectedYear} month={selectedMonth} />
           </section>
 
           {/* Budget Performance */}
           <section>
-            <BudgetPerformance year={selectedYear} month={selectedMonth} />
+            <BudgetPerformance key={`budget-${refreshKey}`} year={selectedYear} month={selectedMonth} />
           </section>
         </div>
       </div>

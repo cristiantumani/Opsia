@@ -56,9 +56,14 @@ export function useBudgetPerformance(year: number, month: number) {
   const [monthData, setMonthData] = useState<CategoryBudgetPerformance[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<ReportError | null>(null);
+  const [refreshTrigger, setRefreshTrigger] = useState(0);
 
   // Use demo user ID when in demo mode, otherwise use authenticated user
   const effectiveUserId = isDemoMode ? DEMO_USER_ID : user?.id;
+
+  const refetch = () => {
+    setRefreshTrigger(prev => prev + 1);
+  };
 
   useEffect(() => {
     if (!effectiveUserId) return;
@@ -160,9 +165,9 @@ export function useBudgetPerformance(year: number, month: number) {
     };
 
     fetchBudgetPerformance();
-  }, [effectiveUserId, year, month]);
+  }, [effectiveUserId, year, month, refreshTrigger]);
 
-  return { monthData, loading, error };
+  return { monthData, loading, error, refetch };
 }
 
 export function useCategoryBudgetHistory(categoryId: string, monthsBack: number = 6) {
@@ -171,9 +176,14 @@ export function useCategoryBudgetHistory(categoryId: string, monthsBack: number 
   const [historyData, setHistoryData] = useState<MonthlyBudgetPerformance[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<ReportError | null>(null);
+  const [refreshTrigger, setRefreshTrigger] = useState(0);
 
   // Use demo user ID when in demo mode, otherwise use authenticated user
   const effectiveUserId = isDemoMode ? DEMO_USER_ID : user?.id;
+
+  const refetch = () => {
+    setRefreshTrigger(prev => prev + 1);
+  };
 
   useEffect(() => {
     if (!effectiveUserId || !categoryId) return;
@@ -277,9 +287,9 @@ export function useCategoryBudgetHistory(categoryId: string, monthsBack: number 
     };
 
     fetchCategoryHistory();
-  }, [effectiveUserId, categoryId, monthsBack]);
+  }, [effectiveUserId, categoryId, monthsBack, refreshTrigger]);
 
-  return { historyData, loading, error };
+  return { historyData, loading, error, refetch };
 }
 
 // Helper function to calculate standard deviation
@@ -297,9 +307,14 @@ export function useBudgetSuggestions(monthsBack: TimeRange = 6) {
   const [suggestions, setSuggestions] = useState<BudgetSuggestion[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<ReportError | null>(null);
+  const [refreshTrigger, setRefreshTrigger] = useState(0);
 
   // Use demo user ID when in demo mode, otherwise use authenticated user
   const effectiveUserId = isDemoMode ? DEMO_USER_ID : user?.id;
+
+  const refetch = () => {
+    setRefreshTrigger(prev => prev + 1);
+  };
 
   useEffect(() => {
     if (!effectiveUserId) return;
@@ -502,7 +517,7 @@ export function useBudgetSuggestions(monthsBack: TimeRange = 6) {
     };
 
     calculateSuggestions();
-  }, [effectiveUserId, monthsBack]);
+  }, [effectiveUserId, monthsBack, refreshTrigger]);
 
-  return { suggestions, loading, error };
+  return { suggestions, loading, error, refetch };
 }
